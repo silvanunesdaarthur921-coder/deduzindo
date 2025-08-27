@@ -1,56 +1,43 @@
+import os
 import asyncio
 import websockets
 import json
-import os
 
-jogadores = {}
-moedas = {}
-pontos = {}
-escudo = {}
+PORT = int(os.environ.get("PORT", 10000))  # Render escolhe a porta
 
-async def registrar(ws):
-    nome = f"Jogador{len(jogadores)+1}"
-    jogadores[ws] = nome
-    moedas[nome] = 3
-    pontos[nome] = 1
-    escudo[nome] = False
-    await ws.send(json.dumps({"msg": f"Bem-vindo {nome}!"}))
-    return nome
+clientes = set()
 
-async def servidor(ws):
-    nome = await registrar(ws)
+async def handler(ws, path):
+    clientes.add(ws)
     try:
-        async for msg in ws:
-            data = json.loads(msg)
+        async for message in ws:
+            data = json.loads(message)
             
-            if data["acao"] == "chat":
-                for player in jogadores:
-                    await player.send(json.dumps({"chat": f"{nome}: {data['texto']}"}))
+            if data.get("acao") == "chat":
+                await broadcast({"chat": f"Jogador: {data['texto']}"})
             
-            if data["acao"] == "escudo":
-                if moedas[nome] > 0:
-                    moedas[nome] -= 1
-                    escudo[nome] = True
-                    await ws.send(json.dumps({"msg": "Você ativou seu ESCUDO!"}))
-                else:
-                    await ws.send(json.dumps({"msg": "Sem moedas!"}))
+            elif data.get("acao") == "escudo":
+                await ws.send(json.dumps({"msg": "🛡️ Escudo ativado!"}))
             
-            if data["acao"] == "comprar":
-                if pontos[nome] > 0:
-                    pontos[nome] -= 1
-                    moedas[nome] += 1
-                    await ws.send(json.dumps({"msg": "Você comprou 1 moeda!"}))
-                else:
-                    await ws.send(json.dumps({"msg": "Sem pontos para comprar!"}))
+            elif data.get("acao") == "comprar":
+                await ws.send(json.dumps({"msg": "💰 Você comprou moedas!"}))
+    
+    except Exception as e:
+        print("Erro:", e)
+    
+    finally:
+        clientes.remove(ws)
 
-    except:
-        print(f"{nome} saiu.")
-        del jogadores[ws]
+async def broadcast(msg):
+    for c in list(clientes):
+        try:
+            await c.send(json.dumps(msg))
+        except:
+            clientes.remove(c)
 
 async def main():
-    port = int(os.environ.get("PORT", 10000))  # Render usa a porta como variável
-    async with websockets.serve(servidor, "0.0.0.0", port):
-        print(f"Servidor rodando na porta {port}")
-        await asyncio.Future()
+    print(f"Servidor iniciado na porta {PORT}")
+    async with websockets.serve(handler, "0.0.0.0", PORT):
+        await asyncio.Future()  # roda para sempre
 
 asyncio.run(main())
