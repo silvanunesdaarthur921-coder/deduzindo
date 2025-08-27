@@ -3,8 +3,7 @@ import asyncio
 import websockets
 import json
 
-PORT = int(os.environ.get("PORT", 10000))  # Render escolhe a porta
-
+PORT = int(os.environ.get("PORT", 10000))  # Render define a porta
 clientes = set()
 
 async def handler(ws, path):
@@ -22,9 +21,10 @@ async def handler(ws, path):
             elif data.get("acao") == "comprar":
                 await ws.send(json.dumps({"msg": "💰 Você comprou moedas!"}))
     
+    except websockets.ConnectionClosedOK:
+        pass
     except Exception as e:
         print("Erro:", e)
-    
     finally:
         clientes.remove(ws)
 
@@ -36,8 +36,8 @@ async def broadcast(msg):
             clientes.remove(c)
 
 async def main():
-    print(f"Servidor iniciado na porta {PORT}")
+    print(f"Servidor rodando na porta {PORT}")
     async with websockets.serve(handler, "0.0.0.0", PORT):
-        await asyncio.Future()  # roda para sempre
+        await asyncio.Future()  # Mantém o servidor rodando
 
 asyncio.run(main())
