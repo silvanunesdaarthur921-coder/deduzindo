@@ -53,4 +53,6 @@ async def broadcast(msg):
 
 async def main():
     print(f"Servidor rodando na porta {PORT}")
-    async with websockets.
+async with websockets.serve(handler, "0.0.0.0", PORT):
+    await asyncio.Future()  # Mantém o servidor rodando
+
