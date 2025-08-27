@@ -16,7 +16,6 @@ async def handler(ws, path):
     moedas[nome] = 3
     escudo[nome] = False
 
-    # Mensagem de boas-vindas
     await ws.send(json.dumps({"msg": f"Bem-vindo {nome}! Moedas: {moedas[nome]}"}))
 
     try:
@@ -55,9 +54,11 @@ async def broadcast(msg):
         except:
             clientes.remove(c)
 
+# ✅ Colocamos o async with dentro de uma função async
 async def main():
     print(f"Servidor rodando na porta {PORT}")
     async with websockets.serve(handler, "0.0.0.0", PORT):
-        await asyncio.Future()
+        await asyncio.Future()  # Mantém o servidor rodando
 
+# Rodar a função main com asyncio
 asyncio.run(main())
